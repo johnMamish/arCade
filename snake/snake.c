@@ -47,7 +47,8 @@ static void update_gameover(jsnake_game_t* gs)
             i = 0;
 
         /* check collision */
-        if((h.x == gs->snake[i].x) && (h.y == gs->snake[i].y))
+        if((h.x == gs->snake[i].x) && (h.y == gs->snake[i].y) &&
+           (i != gs->headidx))
         {
             gs->gameover = 1;
             break;
