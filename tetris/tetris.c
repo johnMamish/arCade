@@ -67,9 +67,8 @@ static int check_collision(jtetris_game_t* gs, jtetris_piece_t* p)
     int i;
     for(i = 0; i < 4; i++)
     {
-        int occ_x = p->shape->occupancy_list[rot_idx][i].x + px;
-        int occ_y = p->shape->occupancy_list[rot_idx][i].y + py;
-
+        int occ_x = (int)((signed char)p->shape->occupancy_list[rot_idx][i].x) + px;
+        int occ_y = (int)((signed char)p->shape->occupancy_list[rot_idx][i].y) + py;
         //check for obvious "out-of-bounds" overlap
         if((occ_x >= GAMESPACE_WIDTH) || (occ_x < 0))
             failureflag = 1;

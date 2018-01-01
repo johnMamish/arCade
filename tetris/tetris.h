@@ -29,7 +29,7 @@
 struct jtetris_shape
 {
     struct {
-        char x, y;
+        signed char x, y;
     } occupancy_list [4][4];
 };
 
