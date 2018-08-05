@@ -372,6 +372,9 @@ void jtetris_update_state(jtetris_game_t* gs,
     if(gs->level < (sizeof(gravity_levels) / (sizeof(gravity_levels[0]))))
         gravtime = gravity_levels[gs->level];
 
+    if(uinput->down)
+        gs->gravity_count = gravtime;
+
     while(gs->gravity_count > gravtime)
     {
         gs->gravity_count -= gravtime;
