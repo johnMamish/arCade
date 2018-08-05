@@ -40,15 +40,14 @@ static void update_gameover(jsnake_game_t* gs)
 
     /* check if it bit itself. */
     uint32_t i;
-    for(i = gs->tailidx; i != gs->headidx; i++)
+    for(i = gs->tailidx; i != gs->headidx; i = ((i + 1) > MAX_SNAKE) ? 0 : (i + 1))
     {
         /* check bounds */
         if(i > MAX_SNAKE)
             i = 0;
 
         /* check collision */
-        if((h.x == gs->snake[i].x) && (h.y == gs->snake[i].y) &&
-           (i != gs->headidx))
+        if((h.x == gs->snake[i].x) && (h.y == gs->snake[i].y))
         {
             gs->gameover = 1;
             break;
