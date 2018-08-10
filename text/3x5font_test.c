@@ -93,28 +93,24 @@ int main(int argc, char** argv)
 {
     uint8_t *buf = calloc(WIDTH * HEIGHT, sizeof(uint8_t));
 
-    int x = 10;
-    const char* str = "HIGH SCORE:";
+    //const char* str = "HIGH SCORE:";
+    text_scroller_t ts;
+    text_scroller_init(&ts, 0, 10, 21, 100000, "HIGH SCORE:");
 
     while(1)
     {
         memset(buf, 0, WIDTH * HEIGHT);
 
-        text_draw_puts(buf, WIDTH, HEIGHT, str, x, 0);
+        text_scroller_draw(buf, &ts);
         int mid = 5 - (text_get_width("54") / 2);
         text_draw_puts(buf, WIDTH, HEIGHT, "54", mid, 10);
         /* draw */
         draw_buf(buf);
 
-        struct timespec req = {0, 100000000};
+        struct timespec req = {0, 10000000};
         nanosleep(&req, NULL);
 
-        x--;
-
-        if((x + text_get_width(str)) < 0)
-        {
-            x = 10;
-        }
+        text_scroller_advance(&ts, 10000);
     }
 
     return 0;

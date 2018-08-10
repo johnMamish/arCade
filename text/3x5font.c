@@ -667,3 +667,41 @@ int text_get_width(const char *s)
 
     return xn;
 }
+
+void text_scroller_init(text_scroller_t *ts, int y, int width, int height, int step_time_us,
+                        const char *s)
+{
+    ts->x = width;
+    ts->y = y;
+    ts->screen_width = width;
+    ts->screen_height = height;
+    ts->step_time = step_time_us;
+    ts->time_count = 0;
+    ts->s = s;
+    ts->str_width = text_get_width(s);
+}
+
+void text_scroller_draw(uint8_t *buf, text_scroller_t *ts)
+{
+    text_draw_puts(buf, ts->screen_width, ts->screen_height, ts->s, ts->x, ts->y);
+}
+
+void text_scroller_advance(text_scroller_t *ts, int dt_usec)
+{
+    ts->time_count += dt_usec;
+
+    int steps = (ts->time_count / ts->step_time);
+    ts->x -= steps;
+    if((ts->x + ts->str_width) < 0)
+    {
+        ts->x = ts->screen_width;
+    }
+
+    ts->time_count -= (steps * ts->time_count);
+}
+
+void text_scroller_reset(text_scroller_t *ts)
+{
+    ts->x = ts->screen_width;
+    ts->time_count = 0;
+}
