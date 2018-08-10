@@ -669,7 +669,7 @@ int text_get_width(const char *s)
 }
 
 void text_scroller_init(text_scroller_t *ts, int y, int width, int height, int step_time_us,
-                        const char *s, int flipped)
+                        const char *s)
 {
     ts->x = width;
     ts->y = y;
