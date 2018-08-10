@@ -631,7 +631,7 @@ static void put_glyph(uint8_t *buf, int width, int height, uint8_t ch, int x, in
     {
         for(int px = 0; (px < gd->w_px) && ((x + px) < width); px++)
         {
-            if(((x + px) >= 0) && !!((0x80 >> px) & glyph_bm[py]))
+            if(((x + px) >= 0) && !!((0x80 >> px) & glyph_bm[font_3x5.h_px - py - 1]))
             {
                 buf[(width * (y + py)) + px + x] = 0xff;
             }
@@ -669,7 +669,7 @@ int text_get_width(const char *s)
 }
 
 void text_scroller_init(text_scroller_t *ts, int y, int width, int height, int step_time_us,
-                        const char *s)
+                        const char *s, int flipped)
 {
     ts->x = width;
     ts->y = y;
