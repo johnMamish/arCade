@@ -11,7 +11,7 @@
 #include <fcntl.h>
 #include <time.h>
 
-#include "./3x5font.h"
+#include "./text.h"
 
 #define WIDTH           10
 #define HEIGHT          21
@@ -93,17 +93,21 @@ int main(int argc, char** argv)
 {
     uint8_t *buf = calloc(WIDTH * HEIGHT, sizeof(uint8_t));
 
+    jmfont_screen_descriptor_t sd = {.screen_width = WIDTH,
+                                     .screen_height = HEIGHT,
+                                     .flipped_vertical = 0,
+                                     .flipped_horizontal = 1};
+
     //const char* str = "HIGH SCORE:";
     text_scroller_t ts;
-    text_scroller_init(&ts, 0, 10, 21, 100000, "HIGH SCORE:");
+    text_scroller_init(&ts, &sd, &jmtext_font_3x5, 5, 100000, "HIGH SCORE:");
 
     while(1)
     {
         memset(buf, 0, WIDTH * HEIGHT);
 
         text_scroller_draw(buf, &ts);
-        int mid = 5 - (text_get_width("54") / 2);
-        text_draw_puts(buf, WIDTH, HEIGHT, "54", mid, 10);
+
         /* draw */
         draw_buf(buf);
 

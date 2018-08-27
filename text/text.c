@@ -1,6 +1,161 @@
-#include "3x5font.h"
-#include <stdint.h>
+#include "text.h"
 
+///////////////////////////////////////////////////
+//     Structs for internal use                  //
+///////////////////////////////////////////////////
+
+typedef struct glyph_descriptor glyph_descriptor_t;
+struct glyph_descriptor
+{
+    uint32_t w_px;
+    uint32_t glyph_index;
+};
+
+/**
+ * This struct stores minimal meta-information for an extremely simple font.
+ * a jmfont may not specify glyphs for all 256 ascii characters, but for simplicity and
+ * compactness, the characters for which a font is specified must be contiguous.
+ *
+ * A font consists primarily of two arrays: an array of uint8_t containing glyphs, and an
+ * array of glyph descriptors, which provide index information and width information for
+ * each glyph.
+ */
+struct jmfont
+{
+    int ascii_first;       ///< ascii code of first character in font, inclusive.
+    int ascii_last;        ///< ascii code of last character in font, inclusive.
+    int h_px;              ///< height of font, in pixels
+
+    const uint8_t *glyph_bitmap;            ///< pointer to the start of the glyphs
+    const glyph_descriptor_t *glyph_dsc;    ///< pointer to array of glyph descriptors
+};
+
+/**
+ * Given a character, returns the corresponding glyph descriptor in the font.
+ *
+ * If the character isn't in the fontset, the first glyph in the fontset is returned.
+ */
+static const glyph_descriptor_t* get_glyph_of_char(const jmfont_t *f, char ch)
+{
+    int glyph_idx = ch - f->ascii_first;
+    if(glyph_idx > (f->ascii_last - f->ascii_first))
+    {
+        glyph_idx = 0;
+    }
+    return f->glyph_dsc + glyph_idx;
+}
+
+/**
+ * Given a screen descriptor, a buffer, and coordinates, this function draws the glyph corresponding
+ * to the given character on the buffer.
+ *
+ * wonkiness is because I'm trying to avoid multiplication.
+ */
+static void put_glyph(uint8_t *buf, uint8_t ch, const jmfont_screen_descriptor_t *sd,
+                      const jmfont_t *font, int x, int y)
+{
+    int bufsize = sd->screen_width * sd->screen_height;
+    const glyph_descriptor_t* gd = get_glyph_of_char(font, ch);
+    const uint8_t *glyph_bm = &font->glyph_bitmap[gd->glyph_index];
+
+    int ydelta = (sd->flipped_vertical) ? sd->screen_width : -sd->screen_width;
+    int xdelta = (sd->flipped_horizontal) ? -1 : 1;
+
+    int buf_x, buf_y;
+    buf_y = (sd->flipped_vertical) ? (sd->screen_height - 1 - y) : (y);
+    buf_y *= sd->screen_width;
+
+    for(int pixy = font->h_px - 1; pixy >= 0; pixy--)
+    {
+        buf_x = (sd->flipped_horizontal) ? (sd->screen_width - 1 - x) : x;
+
+        for(int pixx = 0; (pixx < gd->w_px); pixx++)
+        {
+            int idx = buf_x + buf_y;
+            if((idx >= 0) && (idx < bufsize) && (buf_x >= 0) && (buf_x < sd->screen_width)
+               && !!((0x80 >> pixx) & glyph_bm[pixy]))
+            {
+                buf[buf_x + buf_y] = 0xff;
+            }
+            buf_x += xdelta;
+        }
+        buf_y += ydelta;
+    }
+}
+
+/**
+ * Given a string, draws it to the buffer using the given font.
+ */
+static void text_draw_puts(uint8_t *buf, const char *s, const jmfont_screen_descriptor_t *sd,
+                           const jmfont_t *font, int x, int y)
+{
+    int xn = x;
+    for(; *s; s++)
+    {
+        put_glyph(buf, *s, sd, font, xn, y);
+        const glyph_descriptor_t* gd = get_glyph_of_char(font, *s);
+        xn += gd->w_px + 1;
+    }
+}
+
+static int text_get_width(const jmfont_t *font, const char *s)
+{
+    int xn = 0;
+    for(; *s; s++)
+    {
+        const glyph_descriptor_t* gd = get_glyph_of_char(font, *s);
+        xn += gd->w_px + 1;
+    }
+
+    if (xn > 0)
+        xn--;
+
+    return xn;
+}
+
+void text_scroller_init(text_scroller_t *ts, jmfont_screen_descriptor_t* sd, const jmfont_t *font,
+                        int y, int step_time_us, const char *s)
+{
+    ts->jsd = *sd;
+    ts->font = font;
+    ts->x = sd->screen_width;
+    ts->y = y;
+    ts->step_time = step_time_us;
+    ts->time_count = 0;
+    ts->s = s;
+    ts->str_width = text_get_width(font, s);
+}
+
+void text_scroller_draw(uint8_t *buf, text_scroller_t *ts)
+{
+    text_draw_puts(buf, ts->s, &ts->jsd, ts->font, ts->x, ts->y);
+}
+
+void text_scroller_advance(text_scroller_t *ts, int dt_usec)
+{
+    ts->time_count += dt_usec;
+
+    while (ts->time_count >= ts->step_time) {
+        ts->x--;
+        ts->time_count -= ts->step_time;
+    }
+
+    if((ts->x + ts->str_width) < 0)
+    {
+        ts->x = ts->jsd.screen_width;
+    }
+}
+
+void text_scroller_reset(text_scroller_t *ts)
+{
+    ts->x = ts->jsd.screen_width;
+    ts->time_count = 0;
+}
+
+
+///////////////////////////
+// FONT DECLARATIONS
+///////////////////////////
 /*Store the image of the letters (glyph)*/
 static const uint8_t glyph_bitmap_3x5_font[] =
 {
@@ -518,13 +673,6 @@ static const uint8_t glyph_bitmap_3x5_font[] =
 
 };
 
-typedef struct glyph_descriptor glyph_descriptor_t;
-struct glyph_descriptor
-{
-    uint32_t w_px;
-    uint32_t glyph_index;
-};
-
 /*Store the glyph descriptions*/
 static const glyph_descriptor_t glyphs_3x5[] =
 {
@@ -594,17 +742,7 @@ static const glyph_descriptor_t glyphs_3x5[] =
   {.w_px = 3,	.glyph_index = 315},	/*Unicode: U+005f (_)*/
 };
 
-typedef struct font font_t;
-struct font
-{
-    int ascii_first;
-    int ascii_last;
-    int h_px;
-    const uint8_t *glyph_bitmap;
-    const glyph_descriptor_t *glyph_dsc;
-};
-
-const font_t font_3x5 =
+const jmfont_t jmtext_font_3x5 =
 {
     .ascii_first = 32,	/*First Ascii letter in this font*/
     .ascii_last = 95,	/*Last Ascii letter in this font*/
@@ -612,96 +750,3 @@ const font_t font_3x5 =
     .glyph_bitmap = glyph_bitmap_3x5_font,	/*Bitmap of glyphs*/
     .glyph_dsc = glyphs_3x5		/*Description of glyphs*/
 };
-
-static const glyph_descriptor_t* get_glyph_of_char(char ch)
-{
-    int glyph_idx = ch - font_3x5.ascii_first;
-    if(glyph_idx > (font_3x5.ascii_last - font_3x5.ascii_first))
-    {
-        glyph_idx = ' ' - font_3x5.ascii_first;
-    }
-    return font_3x5.glyph_dsc + glyph_idx;
-}
-
-static void put_glyph(uint8_t *buf, int width, int height, uint8_t ch, int x, int y)
-{
-    const glyph_descriptor_t* gd = get_glyph_of_char(ch);
-    const uint8_t *glyph_bm = &glyph_bitmap_3x5_font[gd->glyph_index];
-    for(int py = 0; (py < font_3x5.h_px) && ((y + py) < height); py++)
-    {
-        for(int px = 0; (px < gd->w_px) && ((x + px) < width); px++)
-        {
-            if(((x + px) >= 0) && !!((0x80 >> px) & glyph_bm[font_3x5.h_px - py - 1]))
-            {
-                buf[(width * (y + py)) + px + x] = 0xff;
-            }
-        }
-    }
-}
-
-/**
- *
- */
-void text_draw_puts(uint8_t *buf, int width, int height, const char *s, int x, int y)
-{
-    int xn = x;
-    for(; *s; s++)
-    {
-        put_glyph(buf, width, height, *s, xn, y);
-        const glyph_descriptor_t* gd = get_glyph_of_char(*s);
-        xn += gd->w_px + 1;
-    }
-}
-
-int text_get_width(const char *s)
-{
-    int xn = 0;
-    for(; *s; s++)
-    {
-        const glyph_descriptor_t* gd = get_glyph_of_char(*s);
-        xn += gd->w_px + 1;
-    }
-
-    if (xn > 0)
-        xn--;
-
-    return xn;
-}
-
-void text_scroller_init(text_scroller_t *ts, int y, int width, int height, int step_time_us,
-                        const char *s)
-{
-    ts->x = width;
-    ts->y = y;
-    ts->screen_width = width;
-    ts->screen_height = height;
-    ts->step_time = step_time_us;
-    ts->time_count = 0;
-    ts->s = s;
-    ts->str_width = text_get_width(s);
-}
-
-void text_scroller_draw(uint8_t *buf, text_scroller_t *ts)
-{
-    text_draw_puts(buf, ts->screen_width, ts->screen_height, ts->s, ts->x, ts->y);
-}
-
-void text_scroller_advance(text_scroller_t *ts, int dt_usec)
-{
-    ts->time_count += dt_usec;
-
-    int steps = (ts->time_count / ts->step_time);
-    ts->x -= steps;
-    if((ts->x + ts->str_width) < 0)
-    {
-        ts->x = ts->screen_width;
-    }
-
-    ts->time_count -= (steps * ts->time_count);
-}
-
-void text_scroller_reset(text_scroller_t *ts)
-{
-    ts->x = ts->screen_width;
-    ts->time_count = 0;
-}

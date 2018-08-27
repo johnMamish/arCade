@@ -1,2 +1,2 @@
-all: 3x5font.c 3x5font.h 3x5font_test.c
-	gcc 3x5font.c 3x5font_test.c -o 3x5font_test -Wall -g -std=c99
+all: text.c text.h text_test.c
+	gcc text.c text_test.c -o text_test -Wall -g -std=c99
