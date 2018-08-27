@@ -14,7 +14,7 @@
 
 typedef enum snakedir
 {
-    SNAKEDIR_UP, SNAKEDIR_DOWN, SNAKEDIR_LEFT, SNAKEDIR_RIGHT
+    SNAKEDIR_UP, SNAKEDIR_DOWN, SNAKEDIR_LEFT, SNAKEDIR_RIGHT, SNAKEDIR_NONE
 } snakedir_e;
 
 typedef struct jsnake_point
@@ -33,7 +33,7 @@ typedef struct jsnake_game
     /** Keeps track of how many us should pass between movements. */
     /** Room for future improvement here: this could change with different */
     /** "levels" */
-    int us_per_step;
+    uint32_t us_per_step;
 
     /** target x and y positions. */
     uint8_t targetx, targety;
@@ -43,6 +43,8 @@ typedef struct jsnake_game
     uint32_t headidx, tailidx;
     uint32_t snakelen;
     snakedir_e snakedir;
+    snakedir_e snakedir_first;
+    snakedir_e snakedir_second;
 
     /** These can be used to speed up drawing routines.  Instead of iterating */
     /** through the entire snake, you can just turn off prev_tail and turn on */
@@ -71,6 +73,6 @@ typedef struct jsnake_user_input
  *                       functions                            **
  **************************************************************/
 void jsnake_update_state(jsnake_game_t*, jsnake_user_input_t*, int32_t);
-void jsnake_game_init(jsnake_game_t*, uint32_t, uint8_t, uint8_t);
+void jsnake_game_init(jsnake_game_t*, uint32_t, uint32_t, uint8_t, uint8_t);
 
 #endif

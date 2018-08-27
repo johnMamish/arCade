@@ -55,29 +55,22 @@ static void update_gameover(jsnake_game_t* gs)
     }
 }
 
-/**
- *
- */
-void jsnake_update_state(jsnake_game_t* gs, jsnake_user_input_t* ui, int32_t dt_us)
+static snakedir_e ui_to_snakedir(jsnake_user_input_t *ui)
 {
-    /* jenky.  oh well. */
     if(ui->up)
-        gs->snakedir = SNAKEDIR_UP;
+        return SNAKEDIR_UP;
     if(ui->down)
-        gs->snakedir = SNAKEDIR_DOWN;
+        return SNAKEDIR_DOWN;
     if(ui->left)
-        gs->snakedir = SNAKEDIR_LEFT;
+        return SNAKEDIR_LEFT;
     if(ui->right)
-        gs->snakedir = SNAKEDIR_RIGHT;
+        return SNAKEDIR_RIGHT;
 
-    /* advance speed */
-    /* XXX TODO won't handle moving 2 tiles in one timestep. */
-    gs->move_timeout_us += dt_us;
-    if(gs->move_timeout_us >= gs->us_per_step)
-        gs->move_timeout_us -= gs->us_per_step;
-    else
-        return;
+    return SNAKEDIR_NONE;
+}
 
+static void step_snake(jsnake_game_t *gs)
+{
     /* Advance snake's movement by first moving the tail forward, then */
     /* "generating" a new head */
     gs->prev_tail = gs->snake[gs->tailidx];
@@ -88,23 +81,52 @@ void jsnake_update_state(jsnake_game_t* gs, jsnake_user_input_t* ui, int32_t dt_
     /* figure out where the next head position should be. */
     /* yes, there are better ways to do this, but */
     gs->new_head = gs->snake[gs->headidx];
-    switch(gs->snakedir)
+
+    if(gs->snakedir_first == SNAKEDIR_NONE)
     {
-        case SNAKEDIR_UP:
-            gs->new_head.y++;
-            break;
+        switch(gs->snakedir)
+        {
+            case SNAKEDIR_UP:
+                gs->new_head.y++;
+                break;
 
-        case SNAKEDIR_DOWN:
-            gs->new_head.y--;
-            break;
+            case SNAKEDIR_DOWN:
+                gs->new_head.y--;
+                break;
 
-        case SNAKEDIR_RIGHT:
-            gs->new_head.x++;
-            break;
+            case SNAKEDIR_RIGHT:
+                gs->new_head.x++;
+                break;
 
-        case SNAKEDIR_LEFT:
-            gs->new_head.x--;
-            break;
+            case SNAKEDIR_LEFT:
+                gs->new_head.x--;
+                break;
+            default:
+                break;
+        }
+    }
+    else
+    {
+        switch(gs->snakedir_first)
+        {
+            case SNAKEDIR_UP:
+                gs->new_head.y++;
+                break;
+
+            case SNAKEDIR_DOWN:
+                gs->new_head.y--;
+                break;
+
+            case SNAKEDIR_RIGHT:
+                gs->new_head.x++;
+                break;
+
+            case SNAKEDIR_LEFT:
+                gs->new_head.x--;
+                break;
+            default:
+                break;
+        }
     }
 
     gs->headidx++;
@@ -112,6 +134,45 @@ void jsnake_update_state(jsnake_game_t* gs, jsnake_user_input_t* ui, int32_t dt_
         gs->headidx = 0;
 
     gs->snake[gs->headidx] = gs->new_head;
+}
+
+static void update_snakedir(jsnake_game_t *gs)
+{
+    if(gs->snakedir_second != SNAKEDIR_NONE)
+    {
+        gs->snakedir = gs->snakedir_second;
+    }
+    else if(gs->snakedir_first != SNAKEDIR_NONE)
+    {
+        gs->snakedir = gs->snakedir_first;
+    }
+
+    gs->snakedir_first = SNAKEDIR_NONE;
+    gs->snakedir_second = SNAKEDIR_NONE;
+}
+
+/**
+ *
+ */
+void jsnake_update_state(jsnake_game_t* gs, jsnake_user_input_t* ui, int32_t dt_us)
+{
+    if (ui_to_snakedir(ui) != SNAKEDIR_NONE) {
+        if (gs->snakedir_first != SNAKEDIR_NONE)
+            gs->snakedir_second = ui_to_snakedir(ui);
+        else
+            gs->snakedir_first = ui_to_snakedir(ui);
+    }
+
+    /* advance speed */
+    /* XXX TODO won't handle moving 2 tiles in one timestep. */
+    gs->move_timeout_us += dt_us;
+    if(gs->move_timeout_us >= gs->us_per_step)
+        gs->move_timeout_us -= gs->us_per_step;
+    else
+        return;
+
+    step_snake(gs);
+    update_snakedir(gs);
 
     /* check to see if the snake bit itself or went out of bounds */
     update_gameover(gs);
@@ -145,11 +206,12 @@ void jsnake_update_state(jsnake_game_t* gs, jsnake_user_input_t* ui, int32_t dt_
     }
 }
 
-void jsnake_game_init(jsnake_game_t* gs, uint32_t lfsr_seed, uint8_t width, uint8_t height)
+void jsnake_game_init(jsnake_game_t* gs, uint32_t lfsr_seed, uint32_t us_per_step,
+                      uint8_t width, uint8_t height)
 {
     /* initialize basic state variables */
     gs->move_timeout_us = 0;
-    gs->us_per_step = 125000;
+    gs->us_per_step = us_per_step;
 
     /* initialize snake struct */
     gs->headidx = 1;

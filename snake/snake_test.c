@@ -125,7 +125,7 @@ int main(int argc, char** argv)
     int up, down, left, right;
     jsnake_game_t game;
     jsnake_user_input_t ui;
-    jsnake_game_init(&game, 0x31c3f32e, 20, 20);
+    jsnake_game_init(&game, 0x31c3f32e, 500000, 20, 20);
 
     while(!game.gameover)
     {
@@ -171,12 +171,12 @@ int main(int argc, char** argv)
         ui.down = down;
 
         /* move stuff around */
-        jsnake_update_state(&game, &ui, 55000);
+        jsnake_update_state(&game, &ui, 100000);
 
         /* draw */
         draw_snake(&game);
 
-        struct timespec req = {0, 55000000};
+        struct timespec req = {0, 100000000};
         nanosleep(&req, NULL);
     }
 
