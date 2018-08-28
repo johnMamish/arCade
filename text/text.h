@@ -45,7 +45,7 @@ struct text_scroller
     const char *s;
 };
 
-void text_scroller_init(text_scroller_t *ts, jmfont_screen_descriptor_t* sd, const jmfont_t *font,
+void text_scroller_init(text_scroller_t *ts, const jmfont_screen_descriptor_t* sd, const jmfont_t *font,
                         int y, int step_time_us, const char *s);
 void text_scroller_draw(uint8_t *buf, text_scroller_t *ts);
 void text_scroller_advance(text_scroller_t *ts, int dt_usec);

@@ -72,7 +72,8 @@ typedef struct jsnake_user_input
 /***************************************************************
  *                       functions                            **
  **************************************************************/
-void jsnake_update_state(jsnake_game_t*, jsnake_user_input_t*, int32_t);
-void jsnake_game_init(jsnake_game_t*, uint32_t, uint32_t, uint8_t, uint8_t);
+void jsnake_update_state(jsnake_game_t* gamestate, jsnake_user_input_t* ui, int32_t dt_us);
+void jsnake_game_init(jsnake_game_t* gamestate, uint32_t lfsr_seed, uint32_t us_per_step,
+                      uint8_t screen_width_px, uint8_t screen_height_px);
 
 #endif

@@ -113,8 +113,8 @@ static int text_get_width(const jmfont_t *font, const char *s)
     return xn;
 }
 
-void text_scroller_init(text_scroller_t *ts, jmfont_screen_descriptor_t* sd, const jmfont_t *font,
-                        int y, int step_time_us, const char *s)
+void text_scroller_init(text_scroller_t *ts, const jmfont_screen_descriptor_t* sd,
+                        const jmfont_t *font, int y, int step_time_us, const char *s)
 {
     ts->jsd = *sd;
     ts->font = font;
