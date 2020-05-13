@@ -27,8 +27,8 @@
 
 #define NEXT           'n'
 
-#define WIDTH           16
-#define HEIGHT          16
+#define WIDTH           64
+#define HEIGHT          64
 
 struct termios saved_attributes;
 
@@ -103,6 +103,56 @@ void draw_conway(jconway_game_t* gs, jconway_point_t* cursor)
     printf("\n");
 }
 
+/**
+ * This array has all the bits reversed for ease of transcription. It needs to
+ * be run through u8_array_reverse_bits() before using it.
+ */
+const int simkin_glider_gun_bytewidth = 6;
+uint8_t simkin_glider_gun[] = {
+    0b00000000, 0b01100000, 0b11000000, 0b00000000, 0b00000000, 0b00000000,
+    0b00000000, 0b01100000, 0b11000000, 0b00000000, 0b00000000, 0b00000000,
+    0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000,
+    0b00000000, 0b00000110, 0b00000000, 0b00000000, 0b00000000, 0b00000000,
+    0b00000000, 0b00000110, 0b00000000, 0b00000000, 0b00000000, 0b00000000,
+    0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000,
+    0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000,
+    0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000,
+    0b00000000, 0b00000000, 0b00010010, 0b00000000, 0b00001100, 0b00000000,
+    0b00000000, 0b00000000, 0b00110010, 0b11000000, 0b00001100, 0b00000000,
+    0b00000000, 0b00000000, 0b01000010, 0b11000000, 0b00000000, 0b00000000,
+    0b00000000, 0b00000000, 0b00000000, 0b11000000, 0b01100000, 0b11000000,
+    0b00000000, 0b00000000, 0b01100001, 0b00000000, 0b01100000, 0b11000000,
+    0b00000000, 0b00000000, 0b00011011, 0b00000000, 0b00000000, 0b00000000,
+    0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000,
+    0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000,
+    0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000
+};
+
+static void u8_reverse_bits(uint8_t* byte)
+{
+    uint8_t result = 0;
+
+    uint8_t bitmask = 0x80;
+    int i;
+    for (i = 0; i < 8; i++) {
+        result >>= 1;
+        if (*byte & bitmask) {
+            result |= 0x80;
+        }
+        bitmask >>= 1;
+    }
+    *byte = result;
+}
+
+static void u8_array_reverse_bits(uint8_t* array, int len)
+{
+    int i;
+    for (i = 0; i < len; i++) {
+        u8_reverse_bits(&array[i]);
+    }
+}
+
+
 int main(int argc, char** argv)
 {
     /* echo off, blah blah */
@@ -115,7 +165,19 @@ int main(int argc, char** argv)
     jconway_point_t cursor;
     static uint8_t gamefield[((WIDTH / 8) + 1) * HEIGHT];
     static uint8_t scratchpad[((WIDTH / 8) + 1) * 3];
-    jconway_game_init(&game, gamefield, scratchpad, WIDTH, HEIGHT, 1);
+    jconway_game_init(&game, gamefield, scratchpad, WIDTH, HEIGHT, 0);
+
+    /* set up simkin glider gun for testing. comment this out if you want to
+       test with an empty start. */
+    u8_array_reverse_bits(simkin_glider_gun, sizeof(simkin_glider_gun));
+    const int simkin_y_offset = 6;
+    int y;
+    for (y = 0; (y * simkin_glider_gun_bytewidth) < sizeof(simkin_glider_gun); y++) {
+        memcpy(gamefield + ((y + simkin_y_offset) * ((WIDTH / 8) + 1)),
+               simkin_glider_gun + (y * simkin_glider_gun_bytewidth),
+               simkin_glider_gun_bytewidth);
+    }
+
 
     while(1)
     {

@@ -23,11 +23,10 @@ static uint8_t get_cell_status_in_row_with_wraparound(const jconway_game_t* gs,
                                                       uint8_t* row,
                                                       uint8_t x)
 {
-    if (x == -1) {
+    if (x == 255) {
         if (gs->toroid) {
-            const uint8_t x = x + gs->width;
-            const uint8_t bitmask = (((uint8_t)1) << (x % 8));
-            const uint8_t* ptr = row + (x / 8);
+            const uint8_t bitmask = (((uint8_t)1) << ((gs->width - 1) % 8));
+            const uint8_t* ptr = row + ((gs->width - 1) / 8);
             return (*ptr & bitmask) ? (1) : (0);
         } else {
             return 0;
@@ -69,8 +68,9 @@ static int count_neighbors(const jconway_game_t* gs, jconway_point_t pt)
     jconway_point_t following = { pt.x + 1, pt.y };
     if (following.x == gs->width) {
         if (gs->toroid) {
-            following.x = 0;
-            count += get_cell_status(gs, following);
+            count += get_cell_status_in_row_with_wraparound(gs,
+                                                            gs->scratchpad_current_row,
+                                                            0);
         } else {
             count += 0;
         }
