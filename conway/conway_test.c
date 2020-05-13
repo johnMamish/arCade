@@ -27,8 +27,8 @@
 
 #define NEXT           'n'
 
-#define WIDTH           35
-#define HEIGHT          35
+#define WIDTH           16
+#define HEIGHT          16
 
 struct termios saved_attributes;
 

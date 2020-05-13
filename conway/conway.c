@@ -74,6 +74,8 @@ static int count_neighbors(const jconway_game_t* gs, jconway_point_t pt)
         } else {
             count += 0;
         }
+    } else {
+        count += get_cell_status(gs, following);
     }
 
     /* below row */
@@ -161,6 +163,8 @@ void jconway_step(jconway_game_t* gs)
 
             if (new_cell_status) {
                 *(get_row_ptr(gs, y) + (pt.x / 8)) |= cell_bitmask;
+            } else {
+                *(get_row_ptr(gs, y) + (pt.x / 8)) &= ~cell_bitmask;
             }
 
             cell_bitmask = (cell_bitmask == 0x80) ? (0x01) : (cell_bitmask << 1);
